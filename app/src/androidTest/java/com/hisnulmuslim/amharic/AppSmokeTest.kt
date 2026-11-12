@@ -30,8 +30,16 @@ class AppSmokeTest {
     @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 
+    /** The book is parsed off the main thread, so wait for the home screen first. */
+    private fun awaitBook() {
+        rule.waitUntil(timeoutMillis = 60_000) {
+            rule.onAllNodesWithText("የዕለት ተዕለት ዱዓዎችና ዚክሮች").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
     @Test
     fun homeScreenRendersBook() {
+        awaitBook()
         rule.onNodeWithText("ሂስኑል ሙስሊም").assertIsDisplayed()
         rule.onNodeWithText("የዕለት ተዕለት ዱዓዎችና ዚክሮች").assertIsDisplayed()
         rule.onNodeWithText("የዕለቱ ዱዓ").assertIsDisplayed()
@@ -49,6 +57,7 @@ class AppSmokeTest {
 
     @Test
     fun searchFindsDuas() {
+        awaitBook()
         rule.onNode(hasSetTextAction()).performTextInput("አላህ")
         rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithText("የፍለጋ ውጤቶች").fetchSemanticsNodes().isNotEmpty()
@@ -58,6 +67,7 @@ class AppSmokeTest {
 
     @Test
     fun openChapterFromDuaOfTheDay() {
+        awaitBook()
         rule.onNodeWithText("የዕለቱ ዱዓ").performClick()
         // The chapter screen always shows a back arrow in its app bar.
         rule.waitUntil(timeoutMillis = 40_000) {
@@ -70,6 +80,7 @@ class AppSmokeTest {
 
     @Test
     fun bookmarkADua() {
+        awaitBook()
         rule.onNodeWithText("የዕለቱ ዱዓ").performClick()
         rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithContentDescription("ወደ ተወዳጆች ጨምር").fetchSemanticsNodes().isNotEmpty()
@@ -82,6 +93,7 @@ class AppSmokeTest {
 
     @Test
     fun destructiveSettingsAskForConfirmation() {
+        awaitBook()
         rule.onNodeWithContentDescription("ቅንብሮች").performClick()
         rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithText("ተወዳጆችን አጽዳ").fetchSemanticsNodes().isNotEmpty()
@@ -99,6 +111,7 @@ class AppSmokeTest {
 
     @Test
     fun tasbihScreenOpens() {
+        awaitBook()
         // The extended FAB label lives in the unmerged tree.
         rule.onNodeWithText("ተስቢሕ ቆጣሪ", useUnmergedTree = true).performClick()
         rule.waitUntil(timeoutMillis = 40_000) {

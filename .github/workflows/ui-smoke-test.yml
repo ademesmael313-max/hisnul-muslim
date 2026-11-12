@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   instrumented:
@@ -68,3 +68,24 @@ jobs:
             app/build/outputs/androidTest-results/**
             app/build/outputs/ui-screenshot/**
           if-no-files-found: warn
+
+      - name: Commit failure report
+        if: failure()
+        run: |
+          {
+            echo "# UI smoke test failure"
+            echo
+            echo "commit: ${GITHUB_SHA}"
+            echo
+            echo '```'
+            tail -c 3000 gradle-test.log 2>/dev/null || echo "no gradle log"
+            echo '```'
+            echo '```'
+            find app/build/outputs/androidTest-results -name 'TEST-*.xml' -exec sed -n '1,60p' {} \; 2>/dev/null || echo "no results"
+            echo '```'
+          } > ui-test-failure.md
+          git config user.name "ci-report"
+          git config user.email "ci@example.com"
+          git add ui-test-failure.md
+          git commit -m "CI: UI test failure report [skip ci]" || echo "nothing to commit"
+          git push origin HEAD:arena/93e79f18-hisnul-muslim || echo "push failed"

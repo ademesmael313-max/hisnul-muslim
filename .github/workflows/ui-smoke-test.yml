@@ -65,18 +65,30 @@ jobs:
             app/build/outputs/androidTest-results/**
           if-no-files-found: warn
 
-      - name: Commit screenshots (temporary)
+      - name: Publish screenshot to the repository
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "ci-shot"
-          git config user.email "ci@example.com"
-          mkdir -p docs/screenshots
-          {
-            echo "--- commit step ---"
-            echo "pwd: $(pwd)"
-            echo "branch: $(git rev-parse --abbrev-ref HEAD)"
-            echo "git status:"; git status --short
-          } >> docs/screenshots/status.txt
-          git add docs/screenshots
-          git commit -m "Add emulator screenshot [skip ci]" || echo "nothing to commit"
-          git push || echo "push failed"
+          set -e
+          target_branch="${GITHUB_REF_NAME}"
+          put_file() { # $1 = repo path, $2 = local file, $3 = message
+            local content sha=""
+            content=$(base64 -w0 "$2")
+            sha=$(gh api "repos/${GITHUB_REPOSITORY}/contents/$1?ref=${target_branch}" -q .sha 2>/dev/null || true)
+            if [ -n "$sha" ]; then
+              gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/$1" \
+                -f message="$3 [skip ci]" -f content="$content" -f sha="$sha" -f branch="${target_branch}" >/dev/null
+            else
+              gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/$1" \
+                -f message="$3 [skip ci]" -f content="$content" -f branch="${target_branch}" >/dev/null
+            fi
+          }
+          if [ -s docs/screenshots/home.png ]; then
+            ls -l docs/screenshots/home.png
+            put_file "docs/screenshots/home.png" "docs/screenshots/home.png" "Add home screen screenshot"
+          else
+            echo "screenshot missing"
+            ls -l docs/screenshots || true
+            put_file "docs/screenshots/MISSING.txt" "docs/screenshots/status.txt" "CI: screenshot missing"
+          fi

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -76,6 +77,23 @@ class AppSmokeTest {
         rule.onAllNodesWithContentDescription("ወደ ተወዳጆች ጨምር")[0].performClick()
         rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithContentDescription("ከተወዳጆች አስወግድ").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun destructiveSettingsAskForConfirmation() {
+        rule.onNodeWithContentDescription("ቅንብሮች").performClick()
+        rule.waitUntil(timeoutMillis = 40_000) {
+            rule.onAllNodesWithText("ተወዳጆችን አጽዳ").fetchSemanticsNodes().isNotEmpty()
+        }
+        rule.onNodeWithText("ተወዳጆችን አጽዳ").performScrollTo().performClick()
+        rule.waitUntil(timeoutMillis = 40_000) {
+            rule.onAllNodesWithText("ተወዳጆችን አጽዳ?").fetchSemanticsNodes().isNotEmpty()
+        }
+        // Cancel keeps everything as it is.
+        rule.onNodeWithText("ተወው").performClick()
+        rule.waitUntil(timeoutMillis = 40_000) {
+            rule.onAllNodesWithText("ተወዳጆችን አጽዳ?").fetchSemanticsNodes().isEmpty()
         }
     }
 

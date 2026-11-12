@@ -42,10 +42,13 @@ class AppSmokeTest {
     @Test
     fun openChapterFromDuaOfTheDay() {
         rule.onNodeWithText("የዕለቱ ዱዓ").performClick()
+        // The chapter screen always shows a back arrow in its app bar.
         rule.waitUntil(timeoutMillis = 40_000) {
-            rule.onAllNodesWithText("ቀጣይ").fetchSemanticsNodes().isNotEmpty()
+            rule.onAllNodesWithContentDescription("ተመለስ").fetchSemanticsNodes().isNotEmpty()
         }
-        rule.onNodeWithText("ቀጣይ").assertIsDisplayed()
+        rule.onAllNodesWithContentDescription("ተመለስ")[0].assertIsDisplayed()
+        // …and at least one dua card with its favourite button.
+        rule.onAllNodesWithContentDescription("ወደ ተወዳጆች ጨምር")[0].assertIsDisplayed()
     }
 
     @Test
@@ -62,7 +65,8 @@ class AppSmokeTest {
 
     @Test
     fun tasbihScreenOpens() {
-        rule.onNodeWithText("ተስቢሕ ቆጣሪ").performClick()
+        // The extended FAB label lives in the unmerged tree.
+        rule.onNodeWithText("ተስቢሕ ቆጣሪ", useUnmergedTree = true).performClick()
         rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithText("ሱብሐናላህ").fetchSemanticsNodes().isNotEmpty()
         }

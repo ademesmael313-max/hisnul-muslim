@@ -1,0 +1,29 @@
+# Gradle / Android
+.gradle/
+build/
+app/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.iml
+.idea/
+*.hprof
+output.json
+
+# Signing material — never commit these
+*.jks
+*.keystore
+keystore.properties
+!debug.keystore
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+
+# Local tooling
+__pycache__/
+*.pyc
+dist/

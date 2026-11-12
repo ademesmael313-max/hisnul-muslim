@@ -1,0 +1,80 @@
+name: Build APK
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  APK_VERSION: "1.0.0"
+
+jobs:
+  build:
+    name: Assemble debug + release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Validate Amharic content asset
+        run: python3 tools/validate_asset.py
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Build release APK
+        run: ./gradlew --no-daemon assembleRelease
+        continue-on-error: true
+
+      - name: Collect APKs
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/hisnul-muslim-amharic-${APK_VERSION}-debug.apk"
+          for f in app/build/outputs/apk/release/*.apk; do
+            if [ -f "$f" ]; then cp "$f" "dist/hisnul-muslim-amharic-${APK_VERSION}.apk"; fi
+          done
+          ls -lh dist
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: hisnul-muslim-amharic-apk
+          path: dist/*.apk
+          if-no-files-found: error
+
+      - name: Android lint
+        run: ./gradlew --no-daemon lintDebug
+
+      - name: Upload lint report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: warn
+
+      - name: Attach APKs to a GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "ሂስኑል ሙስሊም ${tag}" \
+              --notes "Offline Hisnul Muslim (ሂስኑል ሙስሊም) in Amharic — 132 chapters, 267 duas, Arabic text with Amharic translation. Download the APK below and install it on Android 7.0+."
+          gh release upload "$tag" dist/*.apk --repo "$GITHUB_REPOSITORY" --clobber

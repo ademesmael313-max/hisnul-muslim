@@ -5,6 +5,9 @@ on:
     branches: ["arena/**"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   instrumented:
     name: Launch app on emulator
@@ -35,7 +38,8 @@ jobs:
           profile: pixel_5
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash -o pipefail -c "./gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log"
+          script: |
+            bash -c './gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log; rc=${PIPESTATUS[0]}; adb logcat -d > logcat.txt 2>/dev/null; exit $rc'
 
       - name: Assert the smoke tests really ran
         run: |
@@ -51,22 +55,29 @@ jobs:
           sys.exit(0 if total > 0 and failures == 0 else 1)
           PY
 
-      - name: Publish failure details as a commit comment
+      - name: Commit failure report (temporary diagnostics)
         if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           {
-            echo "**UI smoke test failed** on \`${GITHUB_SHA}\`"
+            echo "# UI smoke test report"
             echo
-            echo '```'
-            echo "--- gradle tail ---"
-            tail -c 2500 gradle-test.log 2>/dev/null || echo "no gradle log"
+            echo "commit: ${GITHUB_SHA}"
             echo
-            echo "--- test xml ---"
-            find app/build/outputs/androidTest-results -name 'TEST-*.xml' 2>/dev/null | while read -r f; do
-              sed -n '1,120p' "$f"
-            done
+            echo "## gradle (tail)"
             echo '```'
-          } > body.md
-          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -F body=@body.md >/dev/null 2>&1 || echo "could not post comment"
+            tail -c 4000 gradle-test.log 2>/dev/null || echo "no gradle log"
+            echo '```'
+            echo "## test results"
+            echo '```'
+            find app/build/outputs/androidTest-results -name 'TEST-*.xml' -print -exec sed -n '1,80p' {} \; 2>/dev/null || echo "no results"
+            echo '```'
+            echo "## logcat (filtered)"
+            echo '```'
+            grep -E "FATAL|AndroidRuntime|hisnulmuslim|TestRunner|Compose" logcat.txt 2>/dev/null | tail -120 || echo "no logcat"
+            echo '```'
+          } > ui-test-failure.md
+          git config user.name "ci-report"
+          git config user.email "ci@example.com"
+          git add ui-test-failure.md
+          git commit -m "CI: UI test failure report [skip ci]" || echo "nothing to commit"
+          git push || echo "push failed"

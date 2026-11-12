@@ -46,6 +46,9 @@ jobs:
             app/build/test-results/**
           if-no-files-found: warn
 
+      - name: Compile instrumented tests
+        run: ./gradlew --no-daemon assembleDebugAndroidTest
+
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 

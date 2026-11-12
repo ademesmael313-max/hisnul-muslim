@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  APK_VERSION: "1.0.0"
+  APK_VERSION: "1.1.0"
 
 jobs:
   build:
@@ -33,11 +33,28 @@ jobs:
       - name: Validate Amharic content asset
         run: python3 tools/validate_asset.py
 
+      - name: Run unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            app/build/reports/tests/**
+            app/build/test-results/**
+          if-no-files-found: warn
+
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 
       - name: Build release APK
         run: ./gradlew --no-daemon assembleRelease
+        continue-on-error: true
+
+      - name: Build release bundle (AAB for Play Store)
+        run: ./gradlew --no-daemon bundleRelease
         continue-on-error: true
 
       - name: Collect APKs
@@ -46,6 +63,9 @@ jobs:
           cp app/build/outputs/apk/debug/app-debug.apk "dist/hisnul-muslim-amharic-${APK_VERSION}-debug.apk"
           for f in app/build/outputs/apk/release/*.apk; do
             if [ -f "$f" ]; then cp "$f" "dist/hisnul-muslim-amharic-${APK_VERSION}.apk"; fi
+          done
+          for f in app/build/outputs/bundle/release/*.aab; do
+            if [ -f "$f" ]; then cp "$f" "dist/hisnul-muslim-amharic-${APK_VERSION}.aab"; fi
           done
           ls -lh dist
 

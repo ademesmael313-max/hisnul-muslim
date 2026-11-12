@@ -71,4 +71,17 @@
 
     <!-- Common -->
     <string name="back">ተመለስ</string>
+    <string name="chapter_not_found">ምዕራፉ አልተገኘም</string>
+    <string name="duas_count">%1$d ዱዓ</string>
+    <string name="load_error_title">መጽሐፉን መክፈት አልተቻለም</string>
+    <string name="load_error_body">የመተግበሪያውን ውሂብ ማንበብ አልተቻለም። እንደገና ሞክር፤ ካልተሳካ መተግበሪያውን ደግመህ ጫን።</string>
+    <string name="retry">እንደገና ሞክር</string>
+    <string name="loading">በመጫን ላይ…</string>
+    <string name="confirm">አረጋግጥ</string>
+    <string name="cancel">ተወው</string>
+    <string name="confirm_reset_counters_title">ቆጣሪዎችን አጽዳ?</string>
+    <string name="confirm_reset_counters_body">የሁሉም ዱዓዎች የዚክር ቆጣሪዎች ወደ ዜሮ ይመለሳሉ።</string>
+    <string name="confirm_clear_favorites_title">ተወዳጆችን አጽዳ?</string>
+    <string name="confirm_clear_favorites_body">ሁሉም የተወደዱ ዱዓዎች ከዝርዝሩ ይወገዳሉ።</string>
+
 </resources>

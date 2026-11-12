@@ -1,6 +1,7 @@
 package com.hisnulmuslim.amharic.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +26,8 @@ import com.hisnulmuslim.amharic.data.Dua
 import com.hisnulmuslim.amharic.data.DuaBook
 import com.hisnulmuslim.amharic.ui.components.DuaCard
 import com.hisnulmuslim.amharic.ui.components.EmptyState
+import com.hisnulmuslim.amharic.ui.components.SectionHeader
+import com.hisnulmuslim.amharic.ui.components.contentSidePadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +39,9 @@ fun FavoritesScreen(
     onCount: (Dua) -> Unit,
     onResetCount: (Int) -> Unit,
 ) {
+    val sidePadding = contentSidePadding()
     val favorites = book.allDuas.filter { settings.favorites.contains(it.id) }
+    val byChapter = favorites.groupBy { it.chapterId }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -51,10 +56,19 @@ fun FavoritesScreen(
                     }
                 },
                 title = {
-                    Text(
-                        text = stringResource(R.string.favorites),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.favorites),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        if (favorites.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.duas_count, favorites.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -67,8 +81,8 @@ fun FavoritesScreen(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
+                start = sidePadding,
+                end = sidePadding,
                 top = innerPadding.calculateTopPadding() + 12.dp,
                 bottom = innerPadding.calculateBottomPadding() + 24.dp,
             ),
@@ -82,17 +96,24 @@ fun FavoritesScreen(
                     )
                 }
             } else {
-                items(items = favorites, key = { dua: Dua -> dua.id }) { dua ->
-                    DuaCard(
-                        dua = dua,
-                        settings = settings,
-                        isFavorite = true,
-                        count = settings.counters[dua.id] ?: 0,
-                        onToggleFavorite = { onToggleFavorite(dua.id) },
-                        onCount = { onCount(dua) },
-                        onResetCount = { onResetCount(dua.id) },
-                        showChapter = true,
-                    )
+                byChapter.forEach { (chapterId, duas) ->
+                    item(key = "chapter-$chapterId") {
+                        SectionHeader(
+                            title = duas.first().chapterTitle,
+                            trailing = stringResource(R.string.duas_count, duas.size),
+                        )
+                    }
+                    items(items = duas, key = { dua: Dua -> dua.id }) { dua ->
+                        DuaCard(
+                            dua = dua,
+                            settings = settings,
+                            isFavorite = true,
+                            count = settings.counters[dua.id] ?: 0,
+                            onToggleFavorite = { onToggleFavorite(dua.id) },
+                            onCount = { onCount(dua) },
+                            onResetCount = { onResetCount(dua.id) },
+                        )
+                    }
                 }
             }
         }

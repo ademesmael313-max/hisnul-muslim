@@ -39,12 +39,15 @@ Android 7.0 (API 24) or newer is required. The app works fully offline.
 | **Personal** | Bookmarks, light/dark/system theme, copy & share any dua |
 | **Dua of the day** | One dua per day, deterministic (changes at midnight) |
 | **Privacy** | No internet permission, no analytics, no ads — everything is bundled and stored on device |
+| **Robust** | If the bundled book cannot be read, a friendly Amharic error screen with a retry button is shown instead of a crash |
 
 Screens: **Home** (search, dua of the day, category grid, chapter list) · **Chapter** ·
 **Favourites** · **Settings** · **About** · **Tasbīḥ counter**.
 
 ### Verified on every push
-* `assembleDebug` + `assembleRelease` (R8 + resource shrinking) succeed.
+* `testDebugUnitTest` — JVM unit tests for the JSON parser, the diacritic-insensitive search and
+  a guard that the shipped asset really contains 130+ chapters with an Amharic text for every dua.
+* `assembleDebug` + `assembleRelease` (R8 + resource shrinking) + `bundleRelease` (AAB) succeed.
 * Android lint runs with `abortOnError = true` — no lint errors.
 * `app/src/androidTest/.../AppSmokeTest.kt` launches the app on an Android 11 emulator and
   checks that the book renders, search returns results, a chapter opens, bookmarking works and
@@ -76,8 +79,10 @@ Kotlin 1.9.24 · AGP 8.5.2 · Compose BOM 2024.06.00 · Material 3.
 
 ### Command line
 ```bash
+./gradlew testDebugUnitTest      # fast JVM tests (parser, search, bundled content)
 ./gradlew assembleDebug          # app/build/outputs/apk/debug/app-debug.apk
 ./gradlew installDebug           # build + install on a connected device
+./gradlew connectedDebugAndroidTest   # UI smoke tests, needs a device/emulator
 ./gradlew bundleRelease          # .aab for Play Store (sign it first, see below)
 ```
 
@@ -113,6 +118,7 @@ next to a release install.
 │   ├── categories.json         the 12 categories and their chapter mapping
 │   ├── build_asset.py          merges Arabic source + translations → asset JSON
 │   └── validate_asset.py       CI gate: structure, gaps, placeholders
+├── app/src/test/               JVM unit tests (JSON parser, search, bundled asset)
 ├── app/src/androidTest/        Compose UI smoke tests (launch, search, chapter, bookmark)
 └── .github/workflows/
     ├── build-apk.yml           builds + lints the APK, publishes it (releases on tags)
@@ -209,3 +215,5 @@ the debug and release APKs and uploads them as artifacts. Pushing a tag
 * Amharic translation and UI: © the project authors, released under the same MIT terms —
   review before commercial reuse.
 * Noto Sans Ethiopic: SIL OFL 1.1 (`docs/LICENSE-NotoSansEthiopic.txt`).
+
+See [`docs/CHANGELOG.md`](docs/CHANGELOG.md) for what changed between versions.

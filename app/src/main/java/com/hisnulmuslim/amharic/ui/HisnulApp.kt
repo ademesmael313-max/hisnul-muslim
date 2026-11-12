@@ -11,14 +11,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.hisnulmuslim.amharic.BookUiState
 import com.hisnulmuslim.amharic.BookViewModel
+import com.hisnulmuslim.amharic.R
 import com.hisnulmuslim.amharic.data.AppSettings
+import com.hisnulmuslim.amharic.data.DuaBook
+import com.hisnulmuslim.amharic.ui.components.ErrorScreen
+import com.hisnulmuslim.amharic.ui.components.LoadingScreen
 import com.hisnulmuslim.amharic.ui.screens.AboutScreen
 import com.hisnulmuslim.amharic.ui.screens.ChapterScreen
 import com.hisnulmuslim.amharic.ui.screens.FavoritesScreen
@@ -44,6 +50,8 @@ fun HisnulApp(
     viewModel: BookViewModel = viewModel(),
 ) {
     val settings by viewModel.settings.collectAsState()
+    val bookState by viewModel.bookState.collectAsState()
+
     val darkTheme = when (settings.themeMode) {
         AppSettings.THEME_LIGHT -> false
         AppSettings.THEME_DARK -> true
@@ -51,105 +59,124 @@ fun HisnulApp(
     }
 
     HisnulMuslimTheme(darkTheme = darkTheme) {
-        val navController = rememberNavController()
-        val book = viewModel.book
+        when (val state = bookState) {
+            is BookUiState.Loading -> LoadingScreen()
+            is BookUiState.Failed -> ErrorScreen(onRetry = viewModel::loadBook)
+            is BookUiState.Ready -> AppNavigation(
+                book = state.book,
+                settings = settings,
+                appVersion = appVersion,
+                viewModel = viewModel,
+            )
+        }
+    }
+}
 
-        NavHost(
-            navController = navController,
-            startDestination = Routes.HOME,
-        ) {
-            composable(Routes.HOME) {
-                HomeScreen(
+@Composable
+private fun AppNavigation(
+    book: DuaBook,
+    settings: AppSettings,
+    appVersion: String,
+    viewModel: BookViewModel,
+) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Routes.HOME,
+    ) {
+        composable(Routes.HOME) {
+            HomeScreen(
+                book = book,
+                settings = settings,
+                duaOfTheDay = book.allDuas.firstOrNull { it.id == viewModel.duaOfTheDayId },
+                onOpenChapter = { navController.navigate(Routes.chapter(it)) },
+                onToggleFavorite = viewModel::toggleFavorite,
+                onCount = { viewModel.incrementCounter(it.id, it.repeat) },
+                onResetCount = viewModel::resetCounter,
+                onOpenFavorites = { navController.navigate(Routes.FAVORITES) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenTasbih = { navController.navigate(Routes.TASBIH) },
+            )
+        }
+
+        composable(
+            route = Routes.CHAPTER,
+            arguments = listOf(navArgument("chapterId") { type = NavType.IntType }),
+        ) { entry ->
+            val chapterId = entry.arguments?.getInt("chapterId") ?: 0
+            val chapter = book.chapter(chapterId)
+            if (chapter == null) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = stringResource(R.string.chapter_not_found),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
+            } else {
+                ChapterScreen(
                     book = book,
+                    chapter = chapter,
                     settings = settings,
-                    duaOfTheDay = book.allDuas.firstOrNull { it.id == viewModel.duaOfTheDayId },
+                    onBack = { navController.popBackStack() },
                     onOpenChapter = { navController.navigate(Routes.chapter(it)) },
                     onToggleFavorite = viewModel::toggleFavorite,
                     onCount = { viewModel.incrementCounter(it.id, it.repeat) },
                     onResetCount = viewModel::resetCounter,
-                    onOpenFavorites = { navController.navigate(Routes.FAVORITES) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                    onOpenTasbih = { navController.navigate(Routes.TASBIH) },
                 )
             }
+        }
 
-            composable(
-                route = Routes.CHAPTER,
-                arguments = listOf(navArgument("chapterId") { type = NavType.IntType }),
-            ) { entry ->
-                val chapterId = entry.arguments?.getInt("chapterId") ?: 0
-                val chapter = book.chapter(chapterId)
-                if (chapter == null) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background,
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "ምዕራፉ አልተገኘም",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                        }
-                    }
-                } else {
-                    ChapterScreen(
-                        book = book,
-                        chapter = chapter,
-                        settings = settings,
-                        onBack = { navController.popBackStack() },
-                        onOpenChapter = { navController.navigate(Routes.chapter(it)) },
-                        onToggleFavorite = viewModel::toggleFavorite,
-                        onCount = { viewModel.incrementCounter(it.id, it.repeat) },
-                        onResetCount = viewModel::resetCounter,
-                    )
-                }
-            }
+        composable(Routes.FAVORITES) {
+            FavoritesScreen(
+                book = book,
+                settings = settings,
+                onBack = { navController.popBackStack() },
+                onToggleFavorite = viewModel::toggleFavorite,
+                onCount = { viewModel.incrementCounter(it.id, it.repeat) },
+                onResetCount = viewModel::resetCounter,
+            )
+        }
 
-            composable(Routes.FAVORITES) {
-                FavoritesScreen(
-                    book = book,
-                    settings = settings,
-                    onBack = { navController.popBackStack() },
-                    onToggleFavorite = viewModel::toggleFavorite,
-                    onCount = { viewModel.incrementCounter(it.id, it.repeat) },
-                    onResetCount = viewModel::resetCounter,
-                )
-            }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                settings = settings,
+                versionName = appVersion,
+                onBack = { navController.popBackStack() },
+                onThemeMode = viewModel::setThemeMode,
+                onArabicSize = viewModel::setArabicSize,
+                onAmharicSize = viewModel::setAmharicSize,
+                onShowArabic = viewModel::setShowArabic,
+                onShowTranslation = viewModel::setShowTranslation,
+                onResetCounters = viewModel::resetAllCounters,
+                onClearFavorites = viewModel::clearFavorites,
+                onOpenAbout = { navController.navigate(Routes.ABOUT) },
+            )
+        }
 
-            composable(Routes.SETTINGS) {
-                SettingsScreen(
-                    settings = settings,
-                    versionName = appVersion,
-                    onBack = { navController.popBackStack() },
-                    onThemeMode = viewModel::setThemeMode,
-                    onArabicSize = viewModel::setArabicSize,
-                    onAmharicSize = viewModel::setAmharicSize,
-                    onShowArabic = viewModel::setShowArabic,
-                    onShowTranslation = viewModel::setShowTranslation,
-                    onResetCounters = viewModel::resetAllCounters,
-                    onClearFavorites = viewModel::clearFavorites,
-                    onOpenAbout = { navController.navigate(Routes.ABOUT) },
-                )
-            }
+        composable(Routes.ABOUT) {
+            AboutScreen(
+                appVersion = appVersion,
+                onBack = { navController.popBackStack() },
+            )
+        }
 
-            composable(Routes.ABOUT) {
-                AboutScreen(
-                    appVersion = appVersion,
-                    onBack = { navController.popBackStack() },
-                )
-            }
-
-            composable(Routes.TASBIH) {
-                TasbihScreen(
-                    count = settings.tasbihCount,
-                    onCount = { target ->
-                        val next = (settings.tasbihCount + 1).coerceAtMost(target)
-                        viewModel.setTasbihCount(next)
-                    },
-                    onReset = { viewModel.setTasbihCount(0) },
-                    onBack = { navController.popBackStack() },
-                )
-            }
+        composable(Routes.TASBIH) {
+            TasbihScreen(
+                count = settings.tasbihCount,
+                onCount = { target ->
+                    val next = (settings.tasbihCount + 1).coerceAtMost(target)
+                    viewModel.setTasbihCount(next)
+                },
+                onReset = { viewModel.setTasbihCount(0) },
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

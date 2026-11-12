@@ -28,8 +28,8 @@ android {
         applicationId = "com.hisnulmuslim.amharic"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         resourceConfigurations += listOf("am")
 
@@ -110,6 +110,10 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
 
     debugImplementation(libs.androidx.ui.tooling)
+
+    testImplementation(libs.junit)
+    // Real org.json for JVM unit tests (the android.jar stub throws on every call)
+    testImplementation(libs.json)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)

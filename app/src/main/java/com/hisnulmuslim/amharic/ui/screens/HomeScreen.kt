@@ -54,6 +54,7 @@ import com.hisnulmuslim.amharic.ui.components.ChapterRow
 import com.hisnulmuslim.amharic.ui.components.DuaCard
 import com.hisnulmuslim.amharic.ui.components.EmptyState
 import com.hisnulmuslim.amharic.ui.components.SectionHeader
+import com.hisnulmuslim.amharic.ui.components.contentSidePadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +70,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenTasbih: () -> Unit,
 ) {
+    val sidePadding = contentSidePadding()
     var query by rememberSaveable { mutableStateOf("") }
     var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -131,8 +133,8 @@ fun HomeScreen(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
+                start = sidePadding,
+                end = sidePadding,
                 top = innerPadding.calculateTopPadding() + 12.dp,
                 bottom = innerPadding.calculateBottomPadding() + 96.dp,
             ),
@@ -230,7 +232,7 @@ fun HomeScreen(
                 item(key = "results-title") {
                     SectionHeader(
                         title = stringResource(R.string.search_results),
-                        trailing = results.size.toString(),
+                        trailing = stringResource(R.string.duas_count, results.size),
                         modifier = Modifier.padding(top = 8.dp),
                     )
                 }

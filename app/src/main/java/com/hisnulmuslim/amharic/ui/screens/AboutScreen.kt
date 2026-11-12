@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.hisnulmuslim.amharic.R
+import com.hisnulmuslim.amharic.ui.components.contentSidePadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +64,7 @@ fun AboutScreen(
                 .fillMaxWidth()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = contentSidePadding(), vertical = 12.dp),
         ) {
             AboutBlock(
                 title = stringResource(R.string.about_book),

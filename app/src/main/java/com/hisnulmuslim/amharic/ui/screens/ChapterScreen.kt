@@ -34,6 +34,7 @@ import com.hisnulmuslim.amharic.data.Chapter
 import com.hisnulmuslim.amharic.data.Dua
 import com.hisnulmuslim.amharic.data.DuaBook
 import com.hisnulmuslim.amharic.ui.components.DuaCard
+import com.hisnulmuslim.amharic.ui.components.contentSidePadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +51,7 @@ fun ChapterScreen(
     val index = book.chapters.indexOfFirst { it.id == chapter.id }
     val previous = book.chapters.getOrNull(index - 1)
     val next = book.chapters.getOrNull(index + 1)
+    val sidePadding = contentSidePadding()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -72,7 +74,8 @@ fun ChapterScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            text = "${book.category(chapter.categoryId)?.title ?: ""} · ${chapter.duas.size} ዱዓ",
+                            text = "${book.category(chapter.categoryId)?.title ?: ""} · " +
+                                stringResource(R.string.duas_count, chapter.duas.size),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                         )
@@ -128,8 +131,8 @@ fun ChapterScreen(
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
+                start = sidePadding,
+                end = sidePadding,
                 top = innerPadding.calculateTopPadding() + 12.dp,
                 bottom = innerPadding.calculateBottomPadding() + 16.dp,
             ),

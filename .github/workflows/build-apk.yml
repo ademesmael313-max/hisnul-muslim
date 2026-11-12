@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Build release APK (unsigned when no keystore secret is set)
+      - name: Build release APK (unsigned until a keystore is configured)
         run: ./gradlew --no-daemon assembleRelease
         continue-on-error: true
 
@@ -50,3 +50,29 @@ jobs:
           name: hisnul-muslim-amharic-release-apk
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: warn
+
+      - name: Android lint
+        run: ./gradlew --no-daemon lintDebug
+        continue-on-error: true
+
+      - name: Upload lint report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: warn
+
+      - name: Attach APKs to a GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "Hisnul Muslim Amharic $tag" \
+              --notes "Offline Hisnul Muslim (ሂስኑል ሙስሊም) in Amharic — 132 chapters, 267 duas."
+          gh release upload "$tag" app/build/outputs/apk/debug/*.apk --repo "$GITHUB_REPOSITORY" --clobber
+          if compgen -G "app/build/outputs/apk/release/*.apk" > /dev/null; then
+            gh release upload "$tag" app/build/outputs/apk/release/*.apk --repo "$GITHUB_REPOSITORY" --clobber
+          fi

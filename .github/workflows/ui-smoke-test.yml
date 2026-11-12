@@ -35,4 +35,24 @@ jobs:
           profile: pixel_5
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace
+          script: ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log
+
+      - name: Publish failure details as a commit comment
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "**UI smoke test failed** on \`${GITHUB_SHA}\`"
+            echo
+            echo '```'
+            echo "--- gradle tail ---"
+            tail -c 2500 gradle-test.log 2>/dev/null || echo "no gradle log"
+            echo
+            echo "--- test xml ---"
+            find app/build/outputs/androidTest-results -name 'TEST-*.xml' 2>/dev/null | while read -r f; do
+              sed -n '1,120p' "$f"
+            done
+            echo '```'
+          } > body.md
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" -F body=@body.md >/dev/null 2>&1 || echo "could not post comment"

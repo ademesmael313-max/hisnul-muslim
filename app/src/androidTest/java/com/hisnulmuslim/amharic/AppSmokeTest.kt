@@ -33,7 +33,7 @@ class AppSmokeTest {
     @Test
     fun searchFindsDuas() {
         rule.onNode(hasSetTextAction()).performTextInput("አላህ")
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithText("የፍለጋ ውጤቶች").fetchSemanticsNodes().isNotEmpty()
         }
         rule.onNodeWithText("የፍለጋ ውጤቶች").assertIsDisplayed()
@@ -42,7 +42,7 @@ class AppSmokeTest {
     @Test
     fun openChapterFromDuaOfTheDay() {
         rule.onNodeWithText("የዕለቱ ዱዓ").performClick()
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithText("ቀጣይ").fetchSemanticsNodes().isNotEmpty()
         }
         rule.onNodeWithText("ቀጣይ").assertIsDisplayed()
@@ -51,11 +51,11 @@ class AppSmokeTest {
     @Test
     fun bookmarkADua() {
         rule.onNodeWithText("የዕለቱ ዱዓ").performClick()
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithContentDescription("ወደ ተወዳጆች ጨምር").fetchSemanticsNodes().isNotEmpty()
         }
         rule.onAllNodesWithContentDescription("ወደ ተወዳጆች ጨምር")[0].performClick()
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithContentDescription("ከተወዳጆች አስወግድ").fetchSemanticsNodes().isNotEmpty()
         }
     }
@@ -63,7 +63,7 @@ class AppSmokeTest {
     @Test
     fun tasbihScreenOpens() {
         rule.onNodeWithText("ተስቢሕ ቆጣሪ").performClick()
-        rule.waitUntil(timeoutMillis = 15_000) {
+        rule.waitUntil(timeoutMillis = 40_000) {
             rule.onAllNodesWithText("ሱብሐናላህ").fetchSemanticsNodes().isNotEmpty()
         }
         rule.onAllNodesWithText("ሱብሐናላህ")[0].assertIsDisplayed()

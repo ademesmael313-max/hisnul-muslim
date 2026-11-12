@@ -1,17 +1,23 @@
 package com.hisnulmuslim.amharic
 
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 /**
  * End-to-end smoke test: launches the real app and checks that the bundled book
@@ -28,6 +34,16 @@ class AppSmokeTest {
         rule.onNodeWithText("ሂስኑል ሙስሊም").assertIsDisplayed()
         rule.onNodeWithText("የዕለት ተዕለት ዱዓዎችና ዚክሮች").assertIsDisplayed()
         rule.onNodeWithText("የዕለቱ ዱዓ").assertIsDisplayed()
+
+        // Save a real screenshot of the home screen (used by CI, ignored on failure).
+        runCatching {
+            val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
+            val dir = InstrumentationRegistry.getInstrumentation()
+                .targetContext.getExternalFilesDir(null)
+            File(dir, "screenshot-home.png").outputStream().use {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
     }
 
     @Test

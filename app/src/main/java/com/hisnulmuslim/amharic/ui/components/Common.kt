@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WbCloudy
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -51,12 +53,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
@@ -94,7 +101,9 @@ fun shareText(context: Context, text: String) {
 @Composable
 fun SectionHeader(title: String, trailing: String? = null, modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { heading() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -213,7 +222,7 @@ fun ChapterRow(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "$categoryTitle · ${chapter.duas.size} ዱዓ",
+                    text = "$categoryTitle · " + stringResource(R.string.duas_count, chapter.duas.size),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -347,7 +356,8 @@ fun DuaCard(
                             fontWeight = FontWeight.Normal,
                             fontSize = settings.arabicSize.sp,
                             lineHeight = (settings.arabicSize * 1.9f).sp,
-                            textAlign = TextAlign.Start,
+                            textAlign = TextAlign.Justify,
+                            textDirection = TextDirection.Rtl,
                         ),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -424,5 +434,79 @@ fun EmptyState(title: String, hint: String, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+/** Longest line length used on tablets and foldables. */
+val ContentMaxWidth = 720.dp
+
+/**
+ * Horizontal padding that keeps running text readable on tablets and foldables:
+ * content never grows wider than [ContentMaxWidth] and stays centred. On phones
+ * the screen is already narrower, so this equals [base].
+ */
+@Composable
+fun contentSidePadding(base: Dp = 16.dp): Dp {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val extra = ((screenWidth - ContentMaxWidth) / 2).coerceAtLeast(0.dp)
+    return base + extra
+}
+
+@Composable
+fun LoadingScreen(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // Static on purpose: an indeterminate spinner keeps Compose's test clock
+            // busy, and loading the bundled book only takes a few dozen milliseconds.
+            Text(
+                text = stringResource(R.string.loading),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Shown when the bundled book cannot be read, instead of crashing. */
+@Composable
+fun ErrorScreen(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp, vertical = 48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.load_error_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.load_error_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(onClick = onRetry) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.retry))
+            }
+        }
     }
 }

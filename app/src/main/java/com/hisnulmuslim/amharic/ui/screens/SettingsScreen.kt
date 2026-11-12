@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,11 +28,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,7 +43,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hisnulmuslim.amharic.R
+import com.hisnulmuslim.amharic.ui.components.contentSidePadding
 import com.hisnulmuslim.amharic.data.AppSettings
+
+/** Destructive actions that ask for confirmation first. */
+private enum class DestructiveAction(val titleRes: Int, val bodyRes: Int) {
+    RESET_COUNTERS(R.string.confirm_reset_counters_title, R.string.confirm_reset_counters_body),
+    CLEAR_FAVORITES(R.string.confirm_clear_favorites_title, R.string.confirm_clear_favorites_body),
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +67,7 @@ fun SettingsScreen(
     onClearFavorites: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
+    var pendingAction by remember { mutableStateOf<DestructiveAction?>(null) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -88,7 +99,7 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = contentSidePadding(), vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SettingsCard(title = stringResource(R.string.settings_appearance)) {
@@ -179,14 +190,14 @@ fun SettingsScreen(
 
             SettingsCard(title = stringResource(R.string.settings_data)) {
                 OutlinedButton(
-                    onClick = onResetCounters,
+                    onClick = { pendingAction = DestructiveAction.RESET_COUNTERS },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(R.string.reset_all_counters))
                 }
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
-                    onClick = onClearFavorites,
+                    onClick = { pendingAction = DestructiveAction.CLEAR_FAVORITES },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(R.string.clear_favorites))
@@ -231,6 +242,32 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
         }
+    }
+
+    pendingAction?.let { action ->
+        AlertDialog(
+            onDismissRequest = { pendingAction = null },
+            title = { Text(stringResource(action.titleRes)) },
+            text = { Text(stringResource(action.bodyRes)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when (action) {
+                            DestructiveAction.RESET_COUNTERS -> onResetCounters()
+                            DestructiveAction.CLEAR_FAVORITES -> onClearFavorites()
+                        }
+                        pendingAction = null
+                    },
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingAction = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
 }
 

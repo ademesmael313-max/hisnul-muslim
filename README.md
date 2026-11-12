@@ -43,6 +43,14 @@ Android 7.0 (API 24) or newer is required. The app works fully offline.
 Screens: **Home** (search, dua of the day, category grid, chapter list) · **Chapter** ·
 **Favourites** · **Settings** · **About** · **Tasbīḥ counter**.
 
+### Verified on every push
+* `assembleDebug` + `assembleRelease` (R8 + resource shrinking) succeed.
+* Android lint runs with `abortOnError = true` — no lint errors.
+* `app/src/androidTest/.../AppSmokeTest.kt` launches the app on an Android 11 emulator and
+  checks that the book renders, search returns results, a chapter opens, bookmarking works and
+  the tasbīḥ screen opens (5 instrumented tests, run by `.github/workflows/ui-smoke-test.yml`).
+  Run them yourself with `./gradlew connectedDebugAndroidTest`.
+
 ---
 
 ## Requirements
@@ -105,7 +113,10 @@ next to a release install.
 │   ├── categories.json         the 12 categories and their chapter mapping
 │   ├── build_asset.py          merges Arabic source + translations → asset JSON
 │   └── validate_asset.py       CI gate: structure, gaps, placeholders
-└── .github/workflows/build-apk.yml   builds the APK on GitHub and uploads it as an artifact
+├── app/src/androidTest/        Compose UI smoke tests (launch, search, chapter, bookmark)
+└── .github/workflows/
+    ├── build-apk.yml           builds + lints the APK, publishes it (releases on tags)
+    └── ui-smoke-test.yml       runs the instrumented tests on an emulator
 ```
 
 ---

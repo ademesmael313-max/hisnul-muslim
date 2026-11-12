@@ -2,11 +2,10 @@ name: UI smoke test
 
 on:
   push:
-    branches: ["arena/**"]
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   instrumented:
@@ -23,7 +22,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      - name: Enable KVM
+      - name: Enable KVM (hardware accelerated emulator)
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -55,29 +54,14 @@ jobs:
           sys.exit(0 if total > 0 and failures == 0 else 1)
           PY
 
-      - name: Commit failure report (temporary diagnostics)
-        if: failure()
-        run: |
-          {
-            echo "# UI smoke test report"
-            echo
-            echo "commit: ${GITHUB_SHA}"
-            echo
-            echo "## gradle (tail)"
-            echo '```'
-            tail -c 4000 gradle-test.log 2>/dev/null || echo "no gradle log"
-            echo '```'
-            echo "## test results"
-            echo '```'
-            find app/build/outputs/androidTest-results -name 'TEST-*.xml' -print -exec sed -n '1,80p' {} \; 2>/dev/null || echo "no results"
-            echo '```'
-            echo "## logcat (filtered)"
-            echo '```'
-            grep -E "FATAL|AndroidRuntime|hisnulmuslim|TestRunner|Compose" logcat.txt 2>/dev/null | tail -120 || echo "no logcat"
-            echo '```'
-          } > ui-test-failure.md
-          git config user.name "ci-report"
-          git config user.email "ci@example.com"
-          git add ui-test-failure.md
-          git commit -m "CI: UI test failure report [skip ci]" || echo "nothing to commit"
-          git push || echo "push failed"
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-reports
+          path: |
+            gradle-test.log
+            logcat.txt
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: warn

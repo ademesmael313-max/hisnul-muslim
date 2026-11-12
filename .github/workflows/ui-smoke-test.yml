@@ -35,7 +35,21 @@ jobs:
           profile: pixel_5
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log
+          script: bash -o pipefail -c "./gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log"
+
+      - name: Assert the smoke tests really ran
+        run: |
+          python3 - <<'PY'
+          import glob, sys, xml.etree.ElementTree as ET
+          files = glob.glob("app/build/outputs/androidTest-results/**/TEST-*.xml", recursive=True)
+          total = failures = 0
+          for path in files:
+              root = ET.parse(path).getroot()
+              total += int(root.get("tests", 0))
+              failures += int(root.get("failures", 0)) + int(root.get("errors", 0))
+          print(f"{len(files)} result file(s): {total} tests, {failures} failures")
+          sys.exit(0 if total > 0 and failures == 0 else 1)
+          PY
 
       - name: Publish failure details as a commit comment
         if: failure()

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ሂስኑል ሙስሊም</string>
+
+    <!-- Home -->
+    <string name="home_title">ሂስኑል ሙስሊም</string>
+    <string name="home_subtitle">የዕለት ተዕለት ዱዓዎችና ዚክሮች</string>
+    <string name="search_hint">በአማርኛ ወይም በዐረብኛ ፈልግ…</string>
+    <string name="dua_of_the_day">የዕለቱ ዱዓ</string>
+    <string name="categories">ምድቦች</string>
+    <string name="all_chapters">ሁሉም ምዕራፎች</string>
+    <string name="chapters_count">%1$d ምዕራፍ · %2$d ዱዓ</string>
+    <string name="search_results">የፍለጋ ውጤቶች</string>
+    <string name="no_results">ምንም አልተገኘም</string>
+    <string name="no_results_hint">ሌላ ቃል ፈልግ ወይም ምድብ ቀይር።</string>
+    <string name="clear_search">ፍለጋን አጽዳ</string>
+
+    <!-- Chapter -->
+    <string name="previous_chapter">ቀዳሚ</string>
+    <string name="next_chapter">ቀጣይ</string>
+    <string name="counter_done">ተጠናቅቋል</string>
+    <string name="reset_counter">ቆጣሪውን አጽዳ</string>
+    <string name="copy">ቅዳ</string>
+    <string name="share">አጋራ</string>
+    <string name="copied">ተቀድቷል</string>
+    <string name="favorite_add">ወደ ተወዳጆች ጨምር</string>
+    <string name="favorite_remove">ከተወዳጆች አስወግድ</string>
+
+    <!-- Favorites -->
+    <string name="favorites">ተወዳጆች</string>
+    <string name="favorites_empty">እስካሁን ምንም አልመረጥክም።</string>
+    <string name="favorites_empty_hint">ዱዓ ላይ ያለውን የልብ ምልክት በመንካት ተወዳጅ አድርገው።</string>
+
+    <!-- Settings -->
+    <string name="settings">ቅንብሮች</string>
+    <string name="settings_appearance">አቀራረብ</string>
+    <string name="theme">ገጽታ</string>
+    <string name="theme_system">ከስልኩ ጋር</string>
+    <string name="theme_light">ብሩህ</string>
+    <string name="theme_dark">ጨለማ</string>
+    <string name="settings_reading">ንባብ</string>
+    <string name="arabic_size">የዐረብኛ ፊደል መጠን</string>
+    <string name="amharic_size">የአማርኛ ፊደል መጠን</string>
+    <string name="show_arabic">ዐረብኛ ጽሑፍ አሳይ</string>
+    <string name="show_translation">የአማርኛ ትርጉም አሳይ</string>
+    <string name="size_preview">ናሙና፦ አላህ ሆይ፤ ማርልኝ።</string>
+    <string name="settings_data">ውሂብ</string>
+    <string name="reset_all_counters">ሁሉንም ቆጣሪዎች አጽዳ</string>
+    <string name="clear_favorites">ተወዳጆችን አጽዳ</string>
+    <string name="about_app">ስለ መተግበሪያው</string>
+    <string name="offline_note">መተግበሪያው ሙሉ በሙሉ ከመስመር ውጪ ይሠራል። ምንም ፈቃድ አይጠይቅም።</string>
+
+    <!-- About -->
+    <string name="about_title">ስለ መተግበሪያው</string>
+    <string name="about_book">ስለ መጽሐፉ</string>
+    <string name="about_book_body">ሂስኑል ሙስሊም (የሙስሊሙ ምሽግ) በሰዒድ ቢን ዓሊ ቢን ወህፍ አል-ቀህጣኒ የተዘጋጀ የዕለት ተዕለት ዱዓዎችና ዚክሮች ስብስብ ነው። መጽሐፉ ከቁርአንና ከትክክለኛው ሱና የተወሱ ዱዓዎችን በምዕራፍ ያሰባስባል።</string>
+    <string name="about_content">ስለ ይዘቱ</string>
+    <string name="about_content_body">በዚህ መተግበሪያ ውስጥ 132 ምዕራፍና 267 ዱዓ አሉ። የዐረብኛው ጽሑፍ ከሂስኑል ሙስሊም ምንጭ የተወሰደ ሲሆን፣ የአማርኛ ትርጉሙ ትርጉም-ተኮር ነው። ትርጉሙ ረቂቅ ሊሆን ስለሚችል ለንባብና ለመረዳት ያገለግላል፤ የመጨረሻው ማጣቀሻ የዐረብኛው ጽሑፍ ነው።</string>
+    <string name="about_privacy">ብስቲና</string>
+    <string name="about_privacy_body">መተግበሪያው ምንም ዓይነት መረጃ አይሰበስብም፤ ኢንተርኔት አይጠቀምም። ተወዳጆችና ቅንብሮች በስልኩ ላይ ብቻ ይቀመጣሉ።</string>
+    <string name="about_credits">ምስጋና</string>
+    <string name="about_credits_body">የአማርኛ ፊደል፦ Noto Sans Ethiopic (SIL Open Font License 1.1)። የዐረብኛ ጽሑፍ ምንጭ፦ hisnmuslim.com የዱዓ ውሂብ ስብስብ።</string>
+    <string name="version_label">ስሪት %1$s</string>
+
+    <!-- Tasbih -->
+    <string name="tasbih">ተስቢሕ ቆጣሪ</string>
+    <string name="tasbih_reset">አጽዳ</string>
+    <string name="tasbih_completed">ዒላማው ተሳክቷል</string>
+    <string name="tasbih_hint">በክብው ላይ በመንካት ይቁጠሩ</string>
+    <string name="tasbih_phrase">ሱብሐናላህ</string>
+
+    <!-- Common -->
+    <string name="back">ተመለስ</string>
+</resources>

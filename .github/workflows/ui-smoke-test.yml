@@ -70,6 +70,13 @@ jobs:
         run: |
           git config user.name "ci-shot"
           git config user.email "ci@example.com"
-          git add docs/screenshots || true
+          mkdir -p docs/screenshots
+          {
+            echo "--- commit step ---"
+            echo "pwd: $(pwd)"
+            echo "branch: $(git rev-parse --abbrev-ref HEAD)"
+            echo "git status:"; git status --short
+          } >> docs/screenshots/status.txt
+          git add docs/screenshots
           git commit -m "Add emulator screenshot [skip ci]" || echo "nothing to commit"
           git push || echo "push failed"

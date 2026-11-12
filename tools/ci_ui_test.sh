@@ -4,6 +4,9 @@
 # and captures a screenshot of the home screen.
 set -o pipefail
 
+cd "${GITHUB_WORKSPACE:-$(pwd)}"
+echo "pwd: $(pwd)"
+
 ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log
 rc=$?
 
@@ -23,6 +26,7 @@ if [ ! -s docs/screenshots/home.png ]; then
 fi
 
 {
+  echo "pwd: $(pwd)"
   echo "adb devices:"; adb devices
   echo "host files:"; ls -l docs/screenshots
   echo "device files:"; adb shell ls -l "$external" 2>&1 | head -20

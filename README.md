@@ -1,5 +1,7 @@
 # ሂስኑል ሙስሊም — Hisnul Muslim in Amharic
 
+[![Build APK](https://github.com/ademesmael313-max/hisnul-muslim/actions/workflows/build-apk.yml/badge.svg)](https://github.com/ademesmael313-max/hisnul-muslim/actions/workflows/build-apk.yml)
+
 A complete, offline Android app of **Hisnul Muslim (Fortress of the Muslim)** with an
 **Amharic translation of all 267 supplications** across **132 chapters**, built with Kotlin
 and Jetpack Compose. Open the folder in Android Studio, press ▶, and you get an APK.
@@ -9,6 +11,19 @@ and Jetpack Compose. Open the folder in Android Studio, press ▶, and you get a
 </p>
 
 > **በአማርኛ፦** ይህ መተግበሪያ የሂስኑል ሙስሊምን 132 ምዕራፎችና 267 ዱዓዎች በአማርኛ ትርጉም አንድ ላይ ያሰባስባል። ሙሉ በሙሉ ከመስመር ውጪ ይሠራል፤ ፍለጋ፣ ተወዳጆች፣ የፊደል መጠን ማስተካከያ፣ የዚክር ቆጣሪና የተስቢሕ ቆጣሪ አሉት። ፕሮጀክቱን በAndroid Studio ከፍተው በቀጥታ APK ማውጣት ይችላሉ።
+
+---
+
+## ኤፒኬ ማውረድ / Download the APK
+
+Every push builds the app on GitHub. Grab the ready-to-install file from the
+**[Releases page](https://github.com/ademesmael313-max/hisnul-muslim/releases)** — or download the
+`hisnul-muslim-amharic-debug.apk` artifact from the latest
+[Actions run](https://github.com/ademesmael313-max/hisnul-muslim/actions/workflows/build-apk.yml)
+(**Artifacts → hisnul-muslim-amharic-apk**).
+
+On the phone: open the downloaded file → allow "install unknown apps" for your browser → install.
+Android 7.0 (API 24) or newer is required. The app works fully offline.
 
 ---
 
@@ -155,36 +170,22 @@ keyAlias=hisnul
 keyPassword=…
 ```
 
-and wire it in `app/build.gradle.kts`:
+`app/build.gradle.kts` already reads that file. As soon as it exists, release builds are signed
+with your key; while it does not exist, release builds fall back to the debug key so that the APK
+you download from CI is still installable. Keep the keystore and the properties file out of Git
+(both are already in `.gitignore`).
 
-```kotlin
-val keystoreProps = java.util.Properties().apply {
-    val f = rootProject.file("keystore.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
-}
-android {
-    signingConfigs {
-        if (keystoreProps.isNotEmpty()) create("release") {
-            storeFile = file(keystoreProps["storeFile"] as String)
-            storePassword = keystoreProps["storePassword"] as String
-            keyAlias = keystoreProps["keyAlias"] as String
-            keyPassword = keystoreProps["keyPassword"] as String
-        }
-    }
-    buildTypes { getByName("release") { signingConfig = signingConfigs.findByName("release") } }
-}
-```
-
-Release builds have R8 + resource shrinking enabled, so the APK stays small (~2–3 MB).
+Release builds have R8 + resource shrinking enabled, so the APK stays small (~3 MB).
 
 ---
 
 ## Building the APK on GitHub
 
 `.github/workflows/build-apk.yml` runs on every push/PR (and manually via
-**Actions → Build APK → Run workflow**). It validates the content asset, builds debug and
-release APKs and uploads them as **artifacts** you can download and install on a phone.
-Push a tag (`git tag v1.0.0 && git push --tags`) to build a release variant from a tag.
+**Actions → Build APK → Run workflow**). It validates the content asset, runs Android lint, builds
+the debug and release APKs and uploads them as artifacts. Pushing a tag
+(`git tag v1.0.0 && git push origin v1.0.0`) additionally attaches both APKs to a GitHub
+**Release**, which gives you a permanent download link you can open on a phone.
 
 ---
 

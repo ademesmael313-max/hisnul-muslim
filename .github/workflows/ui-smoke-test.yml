@@ -2,13 +2,13 @@ name: UI smoke test
 
 on:
   push:
-    branches: [main, "arena/**"]
+    branches: [main]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   instrumented:
@@ -66,36 +66,5 @@ jobs:
             logcat.txt
             app/build/reports/androidTests/**
             app/build/outputs/androidTest-results/**
+            app/build/outputs/ui-screenshot/**
           if-no-files-found: warn
-
-      - name: Publish screenshot to the repository
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -u
-          out=/tmp/hisnul_shot
-          ls -la "$out" || true
-          target_branch="${GITHUB_REF_NAME}"
-          put_file() {
-            content=$(base64 -w0 "$2")
-            sha=$(gh api "repos/${GITHUB_REPOSITORY}/contents/$1?ref=${target_branch}" -q .sha 2>/dev/null || true)
-            if [ -n "$sha" ]; then
-              gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/$1" \
-                -f message="$3 [skip ci]" -f content="$content" -f sha="$sha" -f branch="${target_branch}" >/dev/null
-            else
-              gh api -X PUT "repos/${GITHUB_REPOSITORY}/contents/$1" \
-                -f message="$3 [skip ci]" -f content="$content" -f branch="${target_branch}" >/dev/null
-            fi
-          }
-          if [ -s "$out/home.png" ]; then
-            put_file "docs/screenshots/home.png" "$out/home.png" "Add home screen screenshot" && echo "published png"
-          else
-            echo "no screenshot; publishing status"
-            if [ -s "$out/status.txt" ]; then
-              put_file "docs/screenshots/CI-STATUS.txt" "$out/status.txt" "CI: screenshot status" || echo "status upload failed"
-            else
-              printf 'no screenshot and no status file\n' > /tmp/s.txt
-              put_file "docs/screenshots/CI-STATUS.txt" "/tmp/s.txt" "CI: screenshot status" || echo "fallback upload failed"
-            fi
-          fi

@@ -37,12 +37,7 @@ jobs:
           profile: pixel_5
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: |
-            bash -c './gradlew --no-daemon connectedDebugAndroidTest --stacktrace 2>&1 | tee gradle-test.log; rc=${PIPESTATUS[0]}; adb logcat -d > logcat.txt 2>/dev/null;
-              mkdir -p docs/screenshots; adb shell am force-stop com.hisnulmuslim.amharic.debug;
-              adb shell am start -W -n com.hisnulmuslim.amharic.debug/com.hisnulmuslim.amharic.MainActivity >/dev/null;
-              sleep 8; adb exec-out screencap -p > docs/screenshots/home.png; ls -l docs/screenshots;
-              exit $rc'
+          script: bash tools/ci_ui_test.sh
 
       - name: Assert the smoke tests really ran
         run: |

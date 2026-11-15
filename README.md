@@ -114,7 +114,9 @@ next to a release install.
 │           ├── mipmap-*/ic_launcher*.png
 │           └── values/{strings,colors,themes}.xml   ← all UI text is Amharic
 ├── tools/                      content pipeline (Python, not part of the APK)
+│   ├── source/en.json          English/Arabic dataset the asset is generated from
 │   ├── translations/           chapter titles + Amharic text of every dua
+│   ├── import_translation.py   align an external Amharic file to the book
 │   ├── categories.json         the 12 categories and their chapter mapping
 │   ├── build_asset.py          merges Arabic source + translations → asset JSON
 │   └── validate_asset.py       CI gate: structure, gaps, placeholders
@@ -144,12 +146,26 @@ next to a release install.
 ### Editing or adding a dua
 
 1. Edit `tools/translations/part*.json` (keys are the dua ids).
-2. Rebuild the asset:
+2. Rebuild the asset — the English/Arabic source ships in `tools/source/en.json`:
    ```bash
-   python3 tools/build_asset.py path/to/en.json     # source dataset, see docs/CONTENT.md
+   python3 tools/build_asset.py                     # regenerates the asset
    python3 tools/validate_asset.py                  # must print "Asset OK"
    ```
 3. Rebuild the app. Nothing else to touch — the asset is read at runtime.
+
+### Bringing in an Amharic translation from a file
+
+Have a trusted Amharic source (Word, PDF, CSV, JSON, TXT)? The importer aligns it to the
+book by Arabic text and only replaces what it can match confidently:
+
+```bash
+python3 tools/import_translation.py path/to/source.docx           # dry run + report
+python3 tools/import_translation.py path/to/source.docx --apply   # accept the matches
+```
+
+`tools/import-report.md` lists every match and everything left untouched. See
+[`docs/CONTENT.md`](docs/CONTENT.md#importing-a-translation-from-a-file) for the details and
+the licensing note.
 
 You can also edit `app/src/main/assets/data/hisnul_muslim_am.json` directly if you only
 need a quick text fix; just keep it valid JSON.

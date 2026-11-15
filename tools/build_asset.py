@@ -2,7 +2,8 @@
 the single JSON asset shipped inside the APK.
 
 Usage:
-    python3 tools/build_asset.py <path/to/en.json>
+    python3 tools/build_asset.py                    # uses tools/source/en.json
+    python3 tools/build_asset.py <path/to/en.json>  # any other export of the same dataset
 
 `en.json` is the English/Arabic export of "Fortress of the Muslim"
 (hisnul-muslim.com dataset, one JSON object per chapter with an English TITLE
@@ -14,6 +15,7 @@ import sys
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
+DEFAULT_SOURCE = TOOLS / "source" / "en.json"
 OUT = TOOLS.parent / "app" / "src" / "main" / "assets" / "data" / "hisnul_muslim_am.json"
 
 
@@ -26,13 +28,27 @@ def load_translations() -> tuple[dict, dict]:
         if dupes:
             raise SystemExit(f"duplicate dua ids in {path.name}: {sorted(dupes)}")
         duas.update(part)
+
+    # Imported wording (tools/import_translation.py) is applied last and wins.
+    overlay = TOOLS / "translations" / "imported.json"
+    if overlay.exists():
+        imported = json.loads(overlay.read_text(encoding="utf-8"))
+        duas.update(imported)
+        print(f"imported.json overrides {len(imported)} dua(s)")
     return titles, duas
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        raise SystemExit("usage: build_asset.py <en.json>")
-    source = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8-sig"))["English"]
+    if len(sys.argv) > 1:
+        source_path = Path(sys.argv[1])
+    else:
+        source_path = DEFAULT_SOURCE
+    if not source_path.exists():
+        raise SystemExit(
+            f"source dataset not found: {source_path}\n"
+            "pass the path explicitly: python3 tools/build_asset.py <path/to/en.json>"
+        )
+    source = json.loads(source_path.read_text(encoding="utf-8-sig"))["English"]
     titles, amharic = load_translations()
     categories = json.loads((TOOLS / "categories.json").read_text(encoding="utf-8"))
 

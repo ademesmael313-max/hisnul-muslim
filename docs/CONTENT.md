@@ -48,7 +48,7 @@ long virtue/commentary note, the note is summarised instead of copied.
    escaped double quotes.
 3. Regenerate and check:
    ```bash
-   python3 tools/build_asset.py /path/to/en.json
+   python3 tools/build_asset.py          # uses tools/source/en.json
    python3 tools/validate_asset.py
    ```
 4. Commit both the translation file and the regenerated asset.
@@ -57,12 +57,46 @@ If you only have the APK source and not the original dataset, edit
 `app/src/main/assets/data/hisnul_muslim_am.json` directly and run
 `python3 tools/validate_asset.py`.
 
+## Importing a translation from a file
+
+`tools/import_translation.py` takes an Amharic source you have the right to use and aligns
+it to the book by **Arabic text**, so it does not matter if the chapter numbering or the
+order differs.
+
+```bash
+# dry run: writes tools/import-report.md with matches, scores and leftovers
+python3 tools/import_translation.py path/to/source.docx
+
+# accept the matches (writes tools/translations/imported.json)
+python3 tools/import_translation.py path/to/source.docx --apply
+python3 tools/build_asset.py && python3 tools/validate_asset.py
+```
+
+Accepted formats:
+
+| Format | How entries are found |
+|---|---|
+| `.json` | objects with `arabic`/`amharic` keys, or a `{"duaId": "text"}` map |
+| `.csv` / `.tsv` | `arabic` and `amharic` columns (header optional) |
+| `.docx` | Arabic paragraph followed by its Ethiopic paragraph |
+| `.pdf` | same, per extracted line (`pip install pypdf`) |
+| `.txt` / `.md` | same as above |
+
+Matching is conservative: exact Arabic match first, then a similarity match that must beat
+the runner-up by a margin, then a long-prefix match. Anything doubtful is left in the
+"unmatched" list of the report instead of overwriting a translation. `imported.json` is
+applied **last** by `build_asset.py`, so imported wording wins over `part*.json`; delete the
+file to fall back to the previous wording. `python3 tools/selftest_import.py` exercises the
+importer and runs in CI.
+
+> Only import text you own or are licensed to use. Copying the translation out of somebody
+> else's published app (for example by extracting its APK) is a copyright problem.
+
 ## Rebuilding the asset from scratch
 
-`build_asset.py` needs the English/Arabic dataset (one JSON object with an `English` array;
-each chapter has `ID`, `TITLE`, `TEXT[]`, and each dua has `ID`, `ARABIC_TEXT`,
-`TRANSLATED_TEXT`, `REPEAT`). Download it from the *Fortress of the Muslim* dataset
-project, then:
+The English/Arabic dataset ships in `tools/source/en.json` (one JSON object with an
+`English` array; each chapter has `ID`, `TITLE`, `TEXT[]`, and each dua has `ID`,
+`ARABIC_TEXT`, `TRANSLATED_TEXT`, `REPEAT`). To use a newer export, pass its path:
 
 ```bash
 python3 tools/build_asset.py /path/to/en.json

@@ -82,8 +82,14 @@ Accepted formats:
 | `.pdf` | same, per extracted line (`pip install pypdf`) |
 | `.txt` / `.md` | same as above |
 
-Matching is conservative: exact Arabic match first, then a similarity match that must beat
-the runner-up by a margin, then a long-prefix match. Anything doubtful is left in the
+**Chapter markers.** A line like `12. የአዛን ዚክሮች` (or `## 12`) switches the importer to
+chapter 12: the Amharic paragraphs that follow are aligned, in order, to that chapter's duas.
+This means a typist can type **only the Amharic**, chapter by chapter, straight out of a
+printed book and ignore the Arabic entirely (`import-self-test` covers this path). Blank lines
+separate duas; a blank line never breaks an "Arabic paragraph then Amharic paragraph" pair.
+
+Matching is conservative: chapter markers first, then exact Arabic match, then a similarity
+match that must beat the runner-up by a margin, then a long-prefix match. Anything doubtful is left in the
 "unmatched" list of the report instead of overwriting a translation. `imported.json` is
 applied **last** by `build_asset.py`, so imported wording wins over `part*.json`; delete the
 file to fall back to the previous wording. `python3 tools/selftest_import.py` exercises the
@@ -91,6 +97,23 @@ importer and runs in CI.
 
 > Only import text you own or are licensed to use. Copying the translation out of somebody
 > else's published app (for example by extracting its APK) is a copyright problem.
+
+### Working from a scanned book
+
+A PDF made of page images has no text layer — `python3 tools/import_translation.py book.pdf`
+will report `no Amharic text found`. Options, in order of preference:
+
+1. Get a text-based file (Word export, or a PDF where text can be selected).
+2. Type the Amharic chapter by chapter, copying the chapter heading from the book's ማውጫ:
+   ```text
+   1. ከእንቅልፍ ሲነሳ የሚልቸው ዚክሮች
+   «…» የመጀመሪያው ዱዓ ትርጉም …
+
+   «…» ሁለተኛው ዱዓ ትርጉም …
+   ```
+   The importer pairs the paragraphs with the duas of chapter 1 in order.
+3. Run OCR with an Amharic model (e.g. Tesseract `amh`), then feed the output to the importer.
+   Check a few pages by eye first: Ethiopic OCR on low-resolution scans makes syllable errors.
 
 ## Rebuilding the asset from scratch
 

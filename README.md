@@ -163,6 +163,9 @@ python3 tools/import_translation.py path/to/source.docx           # dry run + re
 python3 tools/import_translation.py path/to/source.docx --apply   # accept the matches
 ```
 
+The source does not have to contain Arabic: a line such as `12. የአዛን ዚክሮች` starts chapter 12
+and the Amharic paragraphs after it are aligned to that chapter's duas in order — so a printed
+book can simply be typed chapter by chapter.
 `tools/import-report.md` lists every match and everything left untouched. See
 [`docs/CONTENT.md`](docs/CONTENT.md#importing-a-translation-from-a-file) for the details and
 the licensing note.

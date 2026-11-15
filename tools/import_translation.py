@@ -50,6 +50,8 @@ ARABIC_SCRIPT = re.compile(r"[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFE
 ETHIOPIC_SCRIPT = re.compile(r"[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]")
 TASHKEEL = re.compile(r"[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]")
 
+CHAPTER_MARKER = re.compile(r"^\s*(?:#+\s*)?(\d{1,3})\s*[.)\]:\-]\s+(.{3,})$")
+
 ARABIC_KEYS = ("arabic", "arabic_text", "ar", "ar_text", "text_ar", "original")
 AMHARIC_KEYS = ("amharic", "amharic_text", "am", "am_text", "translation", "text_am",
                 "translated_text", "meaning", "amharic_translation")
@@ -62,6 +64,7 @@ class Entry:
     amharic: str
     arabic: str = ""
     hint_id: str = ""
+    chapter_no: int = 0
     location: str = ""
     dua_id: str = ""
     score: float = 0.0
@@ -191,10 +194,16 @@ def read_delimited(path: Path) -> list[Entry]:
 
 
 def pairs_from_blocks(blocks: list[str], where: str) -> list[Entry]:
-    """Pair Arabic blocks with the Ethiopic block that follows them."""
+    """Pair Arabic blocks with the Ethiopic block that follows them.
+
+    A line such as ``12. የአዛን ዚክሮች`` (or ``## 12``) is treated as a chapter
+    marker: everything that follows is aligned to that chapter of the book, which
+    lets a hand-typed Amharic-only transcription be aligned without Arabic text.
+    """
     entries: list[Entry] = []
     arabic_buf: list[str] = []
     amharic_buf: list[str] = []
+    chapter_no = 0
 
     def flush(index: int) -> None:
         nonlocal arabic_buf, amharic_buf
@@ -202,6 +211,7 @@ def pairs_from_blocks(blocks: list[str], where: str) -> list[Entry]:
             entries.append(Entry(
                 amharic=" ".join(amharic_buf).strip(),
                 arabic=" ".join(arabic_buf).strip(),
+                chapter_no=chapter_no,
                 location=f"{where} block {index}",
             ))
         arabic_buf, amharic_buf = [], []
@@ -209,12 +219,20 @@ def pairs_from_blocks(blocks: list[str], where: str) -> list[Entry]:
     for index, block in enumerate(blocks, start=1):
         text = block.strip()
         if not text:
+            # a blank line ends an Amharic paragraph (Arabic stays pending, so an
+            # "Arabic paragraph, blank line, Amharic paragraph" layout still pairs)
+            if amharic_buf:
+                flush(index)
             continue
+        marker = CHAPTER_MARKER.match(text)
+        if marker and looks_amharic(marker.group(2)) and not looks_arabic(text):
+            number = int(marker.group(1))
+            if 1 <= number <= 200:
+                flush(index)
+                chapter_no = number
+                continue
         has_ar, has_am = looks_arabic(text), looks_amharic(text)
         if has_am:
-            if has_ar and arabic_buf == []:
-                # a dua quoted inside the Amharic paragraph
-                pass
             amharic_buf.append(text)
         elif has_ar:
             if amharic_buf:
@@ -279,24 +297,63 @@ def _is_delimited(path: Path) -> bool:
 # --------------------------------------------------------------------------- #
 # matching
 # --------------------------------------------------------------------------- #
-def load_book(path: Path) -> list[tuple[str, str]]:
+def load_book(path: Path) -> list[dict]:
+    """Every dua of the book with its chapter, in printed order."""
     book = json.loads(path.read_text(encoding="utf-8"))
-    return [
-        (str(dua["id"]), normalize_arabic(dua.get("arabic", "")))
-        for chapter in book["chapters"]
-        for dua in chapter["duas"]
-        if dua.get("arabic")
-    ]
+    duas = []
+    for chapter in book["chapters"]:
+        for position, dua in enumerate(chapter["duas"]):
+            duas.append({
+                "id": str(dua["id"]),
+                "arabic": normalize_arabic(dua.get("arabic", "")),
+                "chapter": str(chapter["id"]),
+                "position": position,
+            })
+    return duas
 
 
-def match_entries(entries: list[Entry], book: list[tuple[str, str]]) -> Report:
-    by_exact = {arabic: dua_id for dua_id, arabic in book if arabic}
-    by_id = {dua_id for dua_id, _ in book}
+def match_entries(entries: list[Entry], book: list[dict]) -> Report:
+    """Align every source entry to a dua of the book."""
+    by_exact = {dua["arabic"]: dua["id"] for dua in book if dua["arabic"]}
+    by_id = {dua["id"] for dua in book}
+    chapters: dict[str, list[dict]] = {}
+    for dua in book:
+        chapters.setdefault(dua["chapter"], []).append(dua)
+    for duas in chapters.values():
+        duas.sort(key=lambda d: d["position"])
+
     used: dict[str, Entry] = {}
     report = Report(entries=entries, book_ids=by_id)
 
+    # Pass 1 — entries that follow a chapter marker are aligned inside that chapter.
+    cursor: dict[str, int] = {}
     for entry in entries:
-        # 1. the source told us the id
+        if not entry.chapter_no:
+            continue
+        chapter = chapters.get(str(entry.chapter_no))
+        if not chapter:
+            continue
+        if entry.arabic:
+            normalised = normalize_arabic(entry.arabic)
+            exact = next((d["id"] for d in chapter
+                          if d["arabic"] and d["arabic"] == normalised and d["id"] not in used), None)
+            if exact:
+                entry.dua_id, entry.score, entry.how = exact, 1.0, "chapter+arabic"
+                used[exact] = entry
+                continue
+        index = cursor.get(str(entry.chapter_no), 0)
+        while index < len(chapter) and chapter[index]["id"] in used:
+            index += 1
+        if index < len(chapter):
+            dua_id = chapter[index]["id"]
+            entry.dua_id, entry.score, entry.how = dua_id, 1.0, "chapter-order"
+            used[dua_id] = entry
+            cursor[str(entry.chapter_no)] = index + 1
+
+    # Pass 2 — the rest is matched on Arabic text.
+    for entry in entries:
+        if entry.dua_id:
+            continue
         if entry.hint_id and entry.hint_id in by_id and entry.hint_id not in used:
             entry.dua_id, entry.score, entry.how = entry.hint_id, 1.0, "id"
             used[entry.hint_id] = entry
@@ -306,17 +363,15 @@ def match_entries(entries: list[Entry], book: list[tuple[str, str]]) -> Report:
 
         normalised = normalize_arabic(entry.arabic)
 
-        # 2. exact Arabic match
         dua_id = by_exact.get(normalised)
         if dua_id and dua_id not in used:
             entry.dua_id, entry.score, entry.how = dua_id, 1.0, "exact"
             used[dua_id] = entry
             continue
 
-        # 3. fuzzy match, with a margin so we never guess between two similar duas
         scored = sorted(
-            ((difflib.SequenceMatcher(None, normalised, arabic).ratio(), dua_id)
-             for dua_id, arabic in book),
+            ((difflib.SequenceMatcher(None, normalised, dua["arabic"]).ratio(), dua["id"])
+             for dua in book if dua["arabic"]),
             reverse=True,
         )[:2]
         if not scored:
@@ -330,12 +385,11 @@ def match_entries(entries: list[Entry], book: list[tuple[str, str]]) -> Report:
             used[best_id] = entry
             continue
 
-        # 4. long text truncated in the source: compare the first N characters
         prefix = normalised[:60]
         if len(prefix) >= 30:
             prefixed = sorted(
-                ((difflib.SequenceMatcher(None, prefix, arabic[:60]).ratio(), dua_id)
-                 for dua_id, arabic in book),
+                ((difflib.SequenceMatcher(None, prefix, dua["arabic"][:60]).ratio(), dua["id"])
+                 for dua in book if dua["arabic"]),
                 reverse=True,
             )[:2]
             if prefixed and prefixed[0][0] >= 0.92 and prefixed[0][1] not in used:
@@ -361,6 +415,7 @@ def write_report(report: Report, source: Path, applied: bool) -> None:
         f"(exact {sum(e.how == 'exact' for e in matched)}, "
         f"fuzzy {sum(e.how == 'fuzzy' for e in matched)}, "
         f"prefix {sum(e.how == 'prefix' for e in matched)}, "
+        f"chapter {sum(e.how.startswith('chapter') for e in matched)}, "
         f"id {sum(e.how == 'id' for e in matched)})",
         f"* unmatched source entries: **{len(report.unmatched)}**",
         f"* duas still using the existing translation: **{len(missed_ids)}**",
@@ -410,7 +465,7 @@ def main() -> None:
     report = match_entries(entries, book)
 
     if args.by_order and len(entries) == len(book) and len(report.matched) < len(book) // 2:
-        ordered_ids = sorted((dua_id for dua_id, _ in book), key=int)
+        ordered_ids = sorted((dua["id"] for dua in book), key=int)
         for entry, dua_id in zip(entries, ordered_ids):
             entry.dua_id, entry.score, entry.how = dua_id, 1.0, "order"
         report.entries = entries

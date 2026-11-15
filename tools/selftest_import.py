@@ -34,6 +34,22 @@ def build_csv(path: Path, duas: list[dict]) -> None:
             writer.writerow([dua["arabic"], f"የሙከራ ትርጉም {index}፦ {dua['amharic'][:40]}"])
 
 
+def build_chapter_text(path: Path) -> set[str]:
+    """Amharic only, no Arabic — aligned by the chapter marker + order inside it."""
+    book = json.loads(ASSET.read_text(encoding="utf-8"))
+    chapters = book["chapters"]
+    expected: set[str] = set()
+    lines: list[str] = []
+    for chapter in (chapters[0], chapters[7]):
+        lines.append(f"{chapter['id']}. {chapter['title']}")
+        for dua in chapter["duas"]:
+            lines.append(dua["amharic"][:80])
+            lines.append("")
+            expected.add(str(dua["id"]))
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return expected
+
+
 def build_text(path: Path, duas: list[dict]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for index, dua in enumerate(duas, start=1):
@@ -41,27 +57,30 @@ def build_text(path: Path, duas: list[dict]) -> None:
             handle.write(f"የሙከራ ትርጉም {index}፦ {dua['amharic'][:40]}\n\n")
 
 
-def check(entries: list[imp.Entry], duas: list[dict], label: str) -> None:
+def check(entries: list[imp.Entry], expected_ids: set[str], label: str) -> None:
     report = imp.match_entries(entries, imp.load_book(ASSET))
     got = {e.dua_id for e in report.matched}
-    want = {str(d["id"]) for d in duas}
-    if got != want:
-        raise SystemExit(f"{label}: matched {sorted(got)}, expected {sorted(want)}")
-    if len(entries) != len(duas):
-        raise SystemExit(f"{label}: found {len(entries)} entries, expected {len(duas)}")
-    print(f"  {label}: {len(entries)}/{len(duas)} matched correctly")
+    if got != expected_ids:
+        raise SystemExit(f"{label}: matched {sorted(got)}, expected {sorted(expected_ids)}")
+    if len(entries) != len(expected_ids):
+        raise SystemExit(f"{label}: found {len(entries)} entries, expected {len(expected_ids)}")
+    print(f"  {label}: {len(entries)}/{len(expected_ids)} matched correctly")
 
 
 def main() -> None:
     duas = sample_duas(3)
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
-        csv_path, txt_path = tmp_path / "book.csv", tmp_path / "book.txt"
+        csv_path = tmp_path / "book.csv"
+        txt_path = tmp_path / "book.txt"
+        chapter_path = tmp_path / "chapters.txt"
         build_csv(csv_path, duas)
         build_text(txt_path, duas)
+        expected_chapters = build_chapter_text(chapter_path)
         print("import self-test")
-        check(imp.read_source(csv_path), duas, "csv")
-        check(imp.read_source(txt_path), duas, "txt")
+        check(imp.read_source(csv_path), {str(d["id"]) for d in duas}, "csv")
+        check(imp.read_source(txt_path), {str(d["id"]) for d in duas}, "txt")
+        check(imp.read_source(chapter_path), expected_chapters, "txt with chapter markers")
     print("import self-test OK ✅")
 
 
